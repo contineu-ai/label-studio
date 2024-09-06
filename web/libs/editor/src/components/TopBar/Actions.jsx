@@ -6,8 +6,10 @@ import { GroundTruth } from "../CurrentEntity/GroundTruth";
 import { EditingHistory } from "./HistoryActions";
 import { confirm } from "../../common/Modal/Modal";
 import { useCallback } from "react";
+import { Component, shouldShowComponent } from '../../../../../apps/labelstudio/src/utils/permission-utils';
 
 export const Actions = ({ store }) => {
+  console.log(`action json = ${JSON.stringify(store)}`);
   const annotationStore = store.annotationStore;
   const entity = annotationStore.selected;
   const saved = !entity.userGenerate || entity.sentUserGenerate;

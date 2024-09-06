@@ -71,6 +71,12 @@ logger = logging.getLogger(__name__)
 class ExportFormatsListAPI(generics.RetrieveAPIView):
     permission_required = all_permissions.projects_view
 
+    def check_permissions(self, request):
+        method = request.method
+        if method == 'GET':
+            if not request.user.has_all_permissions(all_permissions.data_export_view):
+                self.permission_denied(request, message='Permission Denied')
+
     def get_queryset(self):
         return Project.objects.filter(organization=self.request.user.active_organization)
 
@@ -162,6 +168,12 @@ class ExportFormatsListAPI(generics.RetrieveAPIView):
 class ExportAPI(generics.RetrieveAPIView):
     permission_required = all_permissions.projects_change
 
+    def check_permissions(self, request):
+        method = request.method
+        if method == 'GET':
+            if not request.user.has_all_permissions(all_permissions.data_export_view):
+                self.permission_denied(request, message='Permission Denied')
+
     def get_queryset(self):
         return Project.objects.filter(organization=self.request.user.active_organization)
 
@@ -227,6 +239,12 @@ class ProjectExportFiles(generics.RetrieveAPIView):
     permission_required = all_permissions.projects_change
     swagger_schema = None  # hide export files endpoint from swagger
 
+    def check_permissions(self, request):
+        method = request.method
+        if method == 'GET':
+            if not request.user.has_all_permissions(all_permissions.data_export_view):
+                self.permission_denied(request, message='Permission Denied')
+
     def get_queryset(self):
         return Project.objects.filter(organization=self.request.user.active_organization)
 
@@ -251,6 +269,12 @@ class ProjectExportFilesAuthCheck(APIView):
     swagger_schema = None
     http_method_names = ['get']
     permission_required = all_permissions.projects_change
+
+    def check_permissions(self, request):
+        method = request.method
+        if method == 'GET':
+            if not request.user.has_all_permissions(all_permissions.data_export_view):
+                self.permission_denied(request, message='Permission Denied')
 
     def get(self, request, *args, **kwargs):
         """Get export files list"""
@@ -313,6 +337,15 @@ class ExportListAPI(generics.ListCreateAPIView):
     project_model = Project
     serializer_class = ExportSerializer
     permission_required = all_permissions.projects_change
+
+    def check_permissions(self, request):
+        method = request.method
+        if method == 'GET':
+            if not request.user.has_all_permissions(all_permissions.data_export_view):
+                self.permission_denied(request, message='Permission Denied')
+        elif method == 'POST':
+            if not request.user.has_all_permissions(all_permissions.data_export_create):
+                self.permission_denied(request, message='Permission Denied')
 
     def get_serializer_class(self):
         if self.request.method == 'GET':
@@ -423,6 +456,15 @@ class ExportDetailAPI(generics.RetrieveDestroyAPIView):
     lookup_url_kwarg = 'export_pk'
     permission_required = all_permissions.projects_change
 
+    def check_permissions(self, request):
+        method = request.method
+        if method == 'DELETE':
+            if not request.user.has_all_permissions(all_permissions.data_export_delete):
+                self.permission_denied(request, message='Permission Denied')
+        elif method == 'POST':
+            if not request.user.has_all_permissions(all_permissions.data_export_create):
+                self.permission_denied(request, message='Permission Denied')
+
     def delete(self, *args, **kwargs):
         if flag_set('ff_back_dev_4664_remove_storage_file_on_export_delete_29032023_short'):
             try:
@@ -500,6 +542,12 @@ class ExportDownloadAPI(generics.RetrieveAPIView):
     serializer_class = None
     lookup_url_kwarg = 'export_pk'
     permission_required = all_permissions.projects_change
+
+    def check_permissions(self, request):
+        method = request.method
+        if method == 'GET':
+            if not request.user.has_all_permissions(all_permissions.data_export_view):
+                self.permission_denied(request, message='Permission Denied')
 
     def _get_project(self):
         project_pk = self.kwargs.get('pk')
@@ -639,6 +687,15 @@ class ExportConvertAPI(generics.RetrieveAPIView):
     queryset = Export.objects.all()
     lookup_url_kwarg = 'export_pk'
     permission_required = all_permissions.projects_change
+
+    def check_permissions(self, request):
+        method = request.method
+        if method == 'GET':
+            if not request.user.has_all_permissions(all_permissions.data_export_view):
+                self.permission_denied(request, message='Permission Denied')
+        elif method == 'POST':
+            if not request.user.has_all_permissions(all_permissions.data_export_create):
+                self.permission_denied(request, message='Permission Denied')
 
     def post(self, request, *args, **kwargs):
         snapshot = self.get_object()

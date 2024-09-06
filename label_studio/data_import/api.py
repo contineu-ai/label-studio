@@ -49,6 +49,7 @@ from .functions import (
 from .models import FileUpload
 from .serializers import FileUploadSerializer, ImportApiSerializer, PredictionSerializer
 from .uploader import create_file_uploads, load_tasks
+from rest_framework.exceptions import APIException
 
 logger = logging.getLogger(__name__)
 
@@ -252,6 +253,12 @@ class ImportAPI(generics.CreateAPIView):
             project = None
         return {'project': project, 'user': self.request.user}
 
+    def check_permissions(self, request):
+        method = request.method
+        if method == 'POST':
+            if not request.user.has_all_permissions(all_permissions.data_import_create):
+                self.permission_denied(request, message='Permission denied', code=401)
+
     def post(self, *args, **kwargs):
         return super(ImportAPI, self).post(*args, **kwargs)
 
@@ -439,6 +446,12 @@ class TasksBulkCreateAPI(ImportAPI):
 class ReImportAPI(ImportAPI):
     permission_required = all_permissions.projects_change
 
+    def check_permissions(self, request):
+        method = request.method
+        if method == 'POST':
+            if not request.user.has_all_permissions(all_permissions.projects_reimport_create):
+                self.permission_denied(request, message='Permission Denied', code=401)
+
     def sync_reimport(self, project, file_upload_ids, files_as_tasks_list):
         start = time.time()
         tasks, found_formats, data_columns = FileUpload.load_tasks_from_uploaded_files(
@@ -597,6 +610,17 @@ class FileUploadListAPI(generics.mixins.ListModelMixin, generics.mixins.DestroyM
     )
     queryset = FileUpload.objects.all()
 
+    def check_permissions(self, request):
+        method = request.method
+        if method == 'GET':
+            if not request.user.has_all_permissions(all_permissions.data_import_view):
+                self.permission_denied(request, message='Permission Denied', code=401)
+        elif method == 'POST':
+            raise NotImplementedError('not implemented yet')
+        elif method == 'DELETE':
+            if not request.user.has_all_permissions(all_permissions.data_import_delete):
+                self.permission_denied(request, message='Permission Denied', code=401)
+
     def get_queryset(self):
         project = generics.get_object_or_404(Project.objects.for_user(self.request.user), pk=self.kwargs.get('pk', 0))
         if project.is_draft or bool_from_request(self.request.query_params, 'all', False):
@@ -606,6 +630,7 @@ class FileUploadListAPI(generics.mixins.ListModelMixin, generics.mixins.DestroyM
 
         # If requested in regular import, only queried IDs are returned to avoid showing previously imported
         ids = json.loads(self.request.query_params.get('ids', '[]'))
+        print(f'ids = {ids}')
         logger.debug(f'File Upload IDs found: {ids}')
         return FileUpload.objects.filter(project_id=project.id, id__in=ids, user=self.request.user)
 
@@ -663,6 +688,19 @@ class FileUploadAPI(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = (IsAuthenticated,)
     serializer_class = FileUploadSerializer
     queryset = FileUpload.objects.all()
+
+    def check_permissions(self, request):
+        method = request.method
+        if method == 'GET':
+            if not self.request.user.has_all_permissions(all_permissions.data_import_view):
+                self.permission_denied(request, message='Permission Denied', code=401)
+        elif method == 'PATCH':
+            if not self.request.user.has_all_permissions(all_permissions.data_import_change):
+                self.permission_denied(request, message='Permission Denied', code=401)
+        elif method == 'DELETE':
+            if not self.request.user.has_all_permissions(all_permissions.data_import_delete):
+                self.permission_denied(request, message='Permission Denied', code=401)
+
 
     def get(self, *args, **kwargs):
         return super(FileUploadAPI, self).get(*args, **kwargs)

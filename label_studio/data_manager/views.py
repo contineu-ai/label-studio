@@ -4,10 +4,11 @@ from core.utils.common import find_editor_files
 from core.version import get_short_version
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render
+import json
 
 
 @login_required
 def task_page(request, pk):
-    response = {'version': get_short_version()}
+    response = {'version': get_short_version(), 'granted_permissions': json.dumps(list(request.user.get_all_permissions()))}
     response.update(find_editor_files())
     return render(request, 'base.html', response)

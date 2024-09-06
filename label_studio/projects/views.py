@@ -20,12 +20,12 @@ logger = logging.getLogger(__name__)
 
 @login_required
 def project_list(request):
-    return render(request, 'projects/list.html')
+    return render(request, 'projects/list.html', {'granted_permissions': json.dumps(list(request.user.get_all_permissions()))})
 
 
 @login_required
 def project_settings(request, pk, sub_path):
-    return render(request, 'projects/settings.html')
+    return render(request, 'projects/settings.html', {'granted_permissions': json.dumps(list(request.user.get_all_permissions()))})
 
 
 def playground_replacements(request, task_data):

@@ -15,6 +15,7 @@ import { LoadingPossum } from "./LoadingPossum";
 import { OrderButton } from "./OrderButton";
 import { RefreshButton } from "./RefreshButton";
 import { ViewToggle } from "./ViewToggle";
+import { Component, shouldShowComponent } from '../../../../../../apps/labelstudio/src/utils/permission-utils';
 
 const style = {
   minWidth: "110px",
@@ -118,17 +119,23 @@ export const instruments = {
     return <ErrorBox />;
   },
   "import-button": ({ size }) => {
-    return (
-      <Interface name="import">
+    if(shouldShowComponent(Component.PROJECT_IMPORT_BUTTON) ){
+      return (
+        <Interface name="import">
         <ImportButtonWithChecks size={size} />
-      </Interface>
-    );
+        </Interface>
+      );
+    }
+    return <></>
   },
   "export-button": ({ size }) => {
-    return (
-      <Interface name="export">
-        <ExportButton size={size}>Export</ExportButton>
-      </Interface>
-    );
+    if(shouldShowComponent(Component.PROJECT_EXPORT_BUTTON)){
+        return (
+          <Interface name="export">
+          <ExportButton size={size}>Export</ExportButton>
+          </Interface>
+        );
+    }
+    return <></>
   },
 };

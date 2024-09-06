@@ -54,7 +54,6 @@ from tasks.models import (
     Task,
     bulk_update_stats_project_tasks,
 )
-
 logger = logging.getLogger(__name__)
 
 
@@ -119,6 +118,20 @@ class Project(ProjectMixin, models.Model):
 
     objects = ProjectManager()
     __original_label_config = None
+
+    # class State(models.TextChoices):
+    #     ANNOTATING = 'ANT', _('Annotating')
+    #     REVIEWING = 'RVW', _('Reviewing')
+    #     REVIEWED = 'RVD', _('Reviewed')
+    #     COMPLETED = 'CMP', _('Completed')
+    #     SCRAPED = 'SCR', _('Scraped')
+    #
+    # state = models.CharField(
+    #     max_length=3,
+    #     choices=State,
+    #     null=False,
+    #     default=State.ANNOTATING,
+    # )
 
     title = models.CharField(
         _('title'),
@@ -1057,6 +1070,8 @@ class Project(ProjectMixin, models.Model):
         indexes = [
             models.Index(fields=['pinned_at', 'created_at']),
         ]
+
+
 
 
 class ProjectOnboardingSteps(models.Model):

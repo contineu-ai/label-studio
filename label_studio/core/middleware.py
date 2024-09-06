@@ -208,15 +208,15 @@ class InactivitySessionTimeoutMiddleWare(CommonMiddleware):
         ):
             return
 
-        current_time = time.time()
-        last_login = request.session['last_login'] if 'last_login' in request.session else 0
+        # current_time = time.time()
+        # last_login = request.session['last_login'] if 'last_login' in request.session else 0
 
         # Check if this request is too far from when the login happened
-        if (current_time - last_login) > settings.MAX_SESSION_AGE:
-            logger.info(
-                f'Request is too far from last login {current_time - last_login:.0f} > {settings.MAX_SESSION_AGE}; logout'
-            )
-            logout(request)
+        # if (current_time - last_login) > settings.MAX_SESSION_AGE:
+        #     logger.info(
+        #         f'Request is too far from last login {current_time - last_login:.0f} > {settings.MAX_SESSION_AGE}; logout'
+        #     )
+        #     logout(request)
 
         # Push the expiry to the max every time a new request is made to a url that indicates user activity
         # but only if it's not a URL we want to ignore

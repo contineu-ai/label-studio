@@ -12,3 +12,8 @@ class MemberHasOwnerPermission(BasePermission):
             return False
 
         return obj.has_permission(request.user)
+
+
+class IsOwnerPermission(BasePermission):
+    def has_object_permission(self, request, view, obj):
+        return request.user.id == obj.created_by_id

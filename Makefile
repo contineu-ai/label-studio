@@ -1,3 +1,4 @@
+
 # Run Django dev server with Sqlite
 run-dev:
 	DJANGO_DB=sqlite LOG_DIR=tmp DEBUG=true LOG_LEVEL=DEBUG DJANGO_SETTINGS_MODULE=core.settings.label_studio python label_studio/manage.py runserver

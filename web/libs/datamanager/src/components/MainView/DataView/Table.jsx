@@ -17,6 +17,7 @@ import "./Table.scss";
 import { Button } from "../../Common/Button/Button";
 import { useState } from "react";
 import { useEffect } from "react";
+import { shouldShowComponent, Component } from '../../../../../../apps/labelstudio/src/utils/permission-utils';
 
 const injector = inject(({ store }) => {
   const { dataStore, currentView } = store;
@@ -204,7 +205,7 @@ export const DataView = injector(
                   "Looks like you have not imported any data yet"
                 )}
               </Elem>
-              {!hasData && !!store.interfaces.get("import") && (
+              {(!hasData && !!store.interfaces.get("import") && shouldShowComponent(Component.PROJECT_IMPORT_BUTTON) ) && (
                 <Elem name="navigation">
                   <ImportButton look="primary" href="./import">
                     Go to import

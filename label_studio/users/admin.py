@@ -3,17 +3,37 @@
 from core.models import AsyncMigrationStatus
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
-from django.contrib.auth.models import Group
 from ml.models import MLBackend, MLBackendTrainJob
 from organizations.models import Organization, OrganizationMember
 from projects.models import Project
 from tasks.models import Annotation, Prediction, Task
 from users.models import User
+from django import forms
+from django.contrib.auth.forms import ReadOnlyPasswordHashField
 
+
+class ChangeUserAdminForm(forms.ModelForm):
+
+
+    password = ReadOnlyPasswordHashField(
+        label="Password",
+        help_text='''
+            Raw passwords are not stored, so there is no way to see this
+            user’s password, but you can change the password using
+            <a href="{}">this form</a>.
+        ''',
+    )
+
+    class Meta:
+        model = User
+        # fields = '__all__'
+        fields = ('password', 'email', 'username', 'first_name', 'last_name', 'is_active', 'is_staff')
 
 class UserAdminShort(UserAdmin):
 
     add_fieldsets = ((None, {'fields': ('email', 'password1', 'password2')}),)
+
+    form = ChangeUserAdminForm
 
     def __init__(self, *args, **kwargs):
         super(UserAdminShort, self).__init__(*args, **kwargs)
@@ -41,8 +61,9 @@ class UserAdminShort(UserAdmin):
             (None, {'fields': ('password',)}),
             ('Personal info', {'fields': ('email', 'username', 'first_name', 'last_name')}),
             (
-                'Permissions',
+                'Special roles',
                 {
+                    'classes': ('collapse',),
                     'fields': (
                         'is_active',
                         'is_staff',
@@ -50,8 +71,17 @@ class UserAdminShort(UserAdmin):
                     )
                 },
             ),
+            (
+                'Groups And Permissions',
+                {
+                    'classes': ('collapse',),
+                    'fields': ('groups', 'user_permissions'),
+                },
+            ),
             ('Important dates', {'fields': ('last_login', 'date_joined')}),
         )
+
+        self.readonly_fields = ('last_login', 'date_joined')
 
 
 class AsyncMigrationStatusAdmin(admin.ModelAdmin):
@@ -84,5 +114,6 @@ admin.site.register(Organization)
 admin.site.register(OrganizationMember, OrganizationMemberAdmin)
 admin.site.register(AsyncMigrationStatus, AsyncMigrationStatusAdmin)
 
+
 # remove unused django groups
-admin.site.unregister(Group)
+# admin.site.unregister(Group)

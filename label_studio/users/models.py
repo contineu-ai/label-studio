@@ -199,6 +199,16 @@ class User(UserMixin, AbstractBaseUser, PermissionsMixin, UserLastActivityMixin)
             initials = self.first_name[0:1] + self.last_name[0:1]
         return initials
 
+    def has_all_permissions(self, *permissions: str):
+        """Returns True when the user has all permissions from the given permissions and False otherwise"""
+        allowed_permissions = self.get_all_permissions()
+        return self.is_authenticated and (self.is_staff or self.is_superuser or all(list(map(lambda permission: permission in allowed_permissions, permissions))))
+
+    def has_some_permissions(self, *permissions: str):
+        """Returns True when the user has atleast one permission from the given permissions and False otherwise"""
+        allowed_permissions = self.get_all_permissions()
+        return self.is_authenticated and (self.is_staff or self.is_superuser or any(list(map(lambda permission: permission in allowed_permissions, permissions))))
+
 
 @receiver(post_save, sender=User)
 def init_user(sender, instance=None, created=False, **kwargs):

@@ -54,6 +54,7 @@ from tasks.serializers import (
 )
 from webhooks.models import WebhookAction
 from webhooks.utils import api_webhook, api_webhook_for_delete, emit_webhooks_for_instance
+from rest_framework.exceptions import APIException
 
 from label_studio.core.utils.common import load_func
 
@@ -263,6 +264,15 @@ class ProjectListAPI(generics.ListCreateAPIView):
         context['created_by'] = self.request.user
         return context
 
+    def check_permissions(self, request):
+        method = request.method
+        if method == 'GET':
+            if not request.user.has_all_permissions(all_permissions.projects_view):
+                self.permission_denied(request, message='Permission Denied', code=401)
+        elif method == 'POST':
+            if not request.user.has_all_permissions(all_permissions.projects_create):
+                self.permission_denied(request, message='Permission Denied', code=401)
+
     def perform_create(self, ser):
         try:
             ser.save(organization=self.request.user.active_organization)
@@ -396,6 +406,15 @@ class ProjectAPI(generics.RetrieveUpdateDestroyAPIView):
 
     def get(self, request, *args, **kwargs):
         return super(ProjectAPI, self).get(request, *args, **kwargs)
+
+    def check_permissions(self, request):
+        method = request.method
+        if method == 'PATCH':
+            if not request.user.has_all_permissions(all_permissions.projects_change):
+                self.permission_denied(request, message='Permission Denied', code=401)
+        elif method == 'DELETE':
+            if not request.user.has_all_permissions(all_permissions.projects_delete):
+                self.permission_denied(request, message='Permission Denied', code=401)
 
     @api_webhook_for_delete(WebhookAction.PROJECT_DELETED)
     def delete(self, request, *args, **kwargs):
@@ -620,6 +639,7 @@ class ProjectSummaryResetAPI(GetParentObjectMixin, generics.CreateAPIView):
     ),
 )
 class ProjectImportAPI(generics.RetrieveAPIView):
+    '''DON'T KNOW WHAT THIS SHIT IS BEING USED FOR'''
     permission_required = all_permissions.projects_change
     permission_classes = api_settings.DEFAULT_PERMISSION_CLASSES + [ProjectImportPermission]
     parser_classes = (JSONParser,)
@@ -627,6 +647,8 @@ class ProjectImportAPI(generics.RetrieveAPIView):
     queryset = ProjectImport.objects.all()
     lookup_url_kwarg = 'import_pk'
 
+    def check_permissions(self, request):
+        pass
 
 @method_decorator(
     name='get',
@@ -652,6 +674,9 @@ class ProjectReimportAPI(generics.RetrieveAPIView):
     serializer_class = ProjectReimportSerializer
     queryset = ProjectReimport.objects.all()
     lookup_url_kwarg = 'reimport_pk'
+
+    def check_permissions(self, request):
+        print('permissions of reimporting the project')
 
 
 @method_decorator(

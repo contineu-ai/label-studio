@@ -2,13 +2,14 @@
 """
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render
+import json
 
 
 @login_required
 def organization_people_list(request):
-    return render(request, 'organizations/people_list.html')
+    return render(request, 'organizations/people_list.html', {'granted_permissions': json.dumps(list(request.user.get_all_permissions()))})
 
 
 @login_required
 def simple_view(request):
-    return render(request, 'organizations/people_list.html')
+    return render(request, 'organizations/people_list.html', {'granted_permissions': json.dumps(list(request.user.get_all_permissions()))})

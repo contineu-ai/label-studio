@@ -10,6 +10,7 @@ import { TabStore } from "./Tabs";
 import { CustomJSON } from "./types";
 import { User } from "./Users";
 import { ActivityObserver } from "../utils/ActivityObserver";
+import { Component, shouldShowComponent } from "../../../../apps/labelstudio/src/utils/permission-utils";
 
 /**
  * @type {ActivityObserver | null}
@@ -334,7 +335,7 @@ export const AppStore = types
     },
 
     confirmLabelingConfigured() {
-      if (!self.labelingIsConfigured) {
+      if (!self.labelingIsConfigured && shouldShowComponent(Component.PROJECT_SETTINGS_BUTTON)) {
         Modal.confirm({
           title: "You're almost there!",
           body: "Before you can annotate the data, set up labeling configuration",

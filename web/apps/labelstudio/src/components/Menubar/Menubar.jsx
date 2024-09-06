@@ -1,4 +1,4 @@
-import { createContext, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { StaticContent } from "../../app/StaticContent/StaticContent";
 import {
   IconBook,
@@ -27,6 +27,7 @@ import "./MenuContent.scss";
 import "./MenuSidebar.scss";
 import { ModelsPage } from "../../pages/Organization/Models/ModelsPage";
 import { FF_DIA_835, isFF } from "../../utils/feature-flags";
+import { Component, shouldShowComponent } from "../../utils/permission-utils";
 
 export const MenubarContext = createContext();
 
@@ -140,7 +141,7 @@ export const Menubar = ({ enabled, defaultOpened, defaultPinned, children, onSid
           <div className={menubarContext}>
             <LeftContextMenu className={contextItem.mod({ left: true })} />
 
-            <RightContextMenu className={contextItem.mod({ right: true })} />
+            {shouldShowComponent(Component.PROJECT_SETTINGS_BUTTON) && <RightContextMenu className={contextItem.mod({ right: true })} />}
           </div>
 
           <Dropdown.Trigger

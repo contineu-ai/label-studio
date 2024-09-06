@@ -142,6 +142,7 @@ DJANGO_DB_SQLITE = 'sqlite'
 DJANGO_DB_POSTGRESQL = 'postgresql'
 DJANGO_DB = 'default'
 DATABASE_NAME_DEFAULT = os.path.join(BASE_DATA_DIR, 'label_studio.sqlite3')
+print(f'*****************************************************************************************************database name{DATABASE_NAME_DEFAULT}')
 DATABASE_NAME = get_env('DATABASE_NAME', DATABASE_NAME_DEFAULT)
 DATABASES_ALL = {
     DJANGO_DB_POSTGRESQL: {

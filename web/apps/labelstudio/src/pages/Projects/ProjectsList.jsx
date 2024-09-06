@@ -6,6 +6,7 @@ import { LsBulb, LsCheck, LsEllipsis, LsMinus } from "../../assets/icons";
 import { Button, Dropdown, Menu, Pagination, Userpic } from "../../components";
 import { Block, Elem } from "../../utils/bem";
 import { absoluteURL } from "../../utils/helpers";
+import { Component, shouldShowComponent } from "../../utils/permission-utils";
 
 const DEFAULT_CARD_COLORS = ["#FFFFFF", "#FDFDFC"];
 
@@ -40,10 +41,15 @@ export const EmptyProjectsList = ({ openModal }) => {
       <Elem name="header" tag="h1">
         Heidi doesn’t see any projects here!
       </Elem>
-      <p>Create one and start labeling your data.</p>
-      <Elem name="action" tag={Button} onClick={openModal} look="primary">
-        Create Project
-      </Elem>
+      {
+        shouldShowComponent(Component.PROJECT_CREATE_BUTTON) &&
+        <>
+          <p>Create one and start labeling your data.</p>
+          <Elem name="action" tag={Button} onClick={openModal} look="primary">
+            Create Project
+          </Elem>
+        </>
+      }
     </Block>
   );
 };
@@ -79,7 +85,7 @@ const ProjectCard = ({ project }) => {
               <Dropdown.Trigger
                 content={
                   <Menu contextual>
-                    <Menu.Item href={`/projects/${project.id}/settings`}>Settings</Menu.Item>
+                    { shouldShowComponent(Component.PROJECT_SETTINGS_BUTTON) && <Menu.Item href={`/projects/${project.id}/settings`}>Settings</Menu.Item> }
                     <Menu.Item href={`/projects/${project.id}/data?labeling=1`}>Label</Menu.Item>
                   </Menu>
                 }
