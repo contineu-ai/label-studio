@@ -2,6 +2,7 @@
 """
 import datetime
 from typing import Optional
+import enum
 
 from core.feature_flags import flag_set
 from core.utils.common import load_func
@@ -24,6 +25,11 @@ for r in range(YEAR_START, (datetime.datetime.now().year + 1)):
     YEAR_CHOICES.append((r, r))
 
 year = models.IntegerField(_('year'), choices=YEAR_CHOICES, default=datetime.datetime.now().year)
+
+
+class UserRole(enum.Enum):
+    REVIEWER = 'Reviewer'
+    ANNOTATOR = 'Annotator'
 
 
 class UserManager(BaseUserManager):

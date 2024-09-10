@@ -2,9 +2,10 @@
 """
 import json
 import logging
-from typing import Any, Mapping, Optional
+from typing import Any, Mapping, Optional, Dict, Set
 
 from annoying.fields import AutoOneToOneField
+from core.permissions import all_permissions
 from core.feature_flags import flag_set
 from core.label_config import (
     check_control_in_config_by_regex,
@@ -55,6 +56,7 @@ from tasks.models import (
     bulk_update_stats_project_tasks,
 )
 logger = logging.getLogger(__name__)
+from rest_framework.exceptions import APIException
 
 
 class ProjectManager(models.Manager):
@@ -119,19 +121,6 @@ class Project(ProjectMixin, models.Model):
     objects = ProjectManager()
     __original_label_config = None
 
-    # class State(models.TextChoices):
-    #     ANNOTATING = 'ANT', _('Annotating')
-    #     REVIEWING = 'RVW', _('Reviewing')
-    #     REVIEWED = 'RVD', _('Reviewed')
-    #     COMPLETED = 'CMP', _('Completed')
-    #     SCRAPED = 'SCR', _('Scraped')
-    #
-    # state = models.CharField(
-    #     max_length=3,
-    #     choices=State,
-    #     null=False,
-    #     default=State.ANNOTATING,
-    # )
 
     title = models.CharField(
         _('title'),
@@ -152,6 +141,7 @@ class Project(ProjectMixin, models.Model):
     organization = models.ForeignKey(
         'organizations.Organization', on_delete=models.CASCADE, related_name='projects', null=True
     )
+
     label_config = models.TextField(
         _('label config'),
         blank=True,
@@ -285,6 +275,71 @@ class Project(ProjectMixin, models.Model):
     )
 
     pinned_at = models.DateTimeField(_('pinned at'), null=True, default=None, help_text='Pinned date and time')
+
+    # newly added fields
+    class State(models.TextChoices):
+        ANNOTATING = 'ANT', _('Annotating')
+        REVIEWING = 'RVW', _('Reviewing')
+        REVIEWED = 'RVD', _('Reviewed')
+        COMPLETED = 'CMP', _('Completed')
+        SCRAPED = 'SCR', _('Scraped')
+
+        # to know which states can be transistioned to
+
+        @classmethod
+        def _valid_next_states(cls, current_state: str) -> Set[str]:
+            next_states = {
+                cls.ANNOTATING: {cls.SCRAPED, cls.REVIEWING},
+                cls.REVIEWING: {cls.SCRAPED, cls.REVIEWED},
+                cls.REVIEWED: {cls.SCRAPED, cls.COMPLETED, cls.ANNOTATING},
+                cls.COMPLETED: {},
+                cls.SCRAPED: {},
+            }
+            return next_states[current_state]
+
+        @classmethod
+        def _state_required_permission(cls, state: str) -> str:
+            permissions = {
+                cls.ANNOTATING: all_permissions.projects_change_state_to_annotating,
+                cls.REVIEWING: all_permissions.projects_change_state_to_reviewing,
+                cls.REVIEWED: all_permissions.projects_change_state_to_reviewed,
+                cls.COMPLETED: all_permissions.projects_change_state_to_completed,
+                cls.SCRAPED: all_permissions.projects_change_state_to_scraped,
+            }
+            return permissions[state]
+
+        @classmethod
+        def can_transistion_state(cls, user, current_state: str, next_state: str):
+            '''
+            Raises if the transistion is not valid
+            '''
+            try:
+                # validate state transition, so that entering invalid state can be prevented
+                if next_state not in cls._valid_next_states(current_state):
+                    raise APIException(detail='invalid state', code=400)
+
+                # validate whether user is allowed to make the given valid transistion
+                if not user.has_all_permissions(cls._state_required_permission(next_state)):
+                    raise APIException(detail="not allowed", code=403)
+
+            except KeyError:
+                raise APIException(detail='unknown state', code=400)
+
+
+    state = models.CharField(
+        max_length=10,
+        choices=State.choices,
+        null=False,
+        default=State.ANNOTATING,
+    )
+
+    assigned_annotator = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name='assigned_projects',
+        verbose_name=_('assigned_annotator'),
+    )
 
     def __init__(self, *args, **kwargs):
         super(Project, self).__init__(*args, **kwargs)

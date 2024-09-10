@@ -1,11 +1,9 @@
 import logging
-
 from django.db import models
 from django.db.models import JSONField
 from django.utils.translation import gettext_lazy as _
 
 logger = logging.getLogger(__name__)
-
 
 class AsyncMigrationStatus(models.Model):
     meta = JSONField(

@@ -161,6 +161,20 @@ class Task(TaskMixin, models.Model):
         help_text='When the last comment was updated',
     )
 
+    # newly added fields
+    class State(models.TextChoices):
+        PENDING_ANNOTATION = 'PAN', _('Pending-Annotation')
+        PENDING_REVIEW = 'PRV', _('Pending-Review')
+        APPROVED = 'APR', _('Approved')
+        REJECTED = 'REJ', _('Rejected')
+
+    state = models.CharField(
+        max_length=3,
+        choices=State.choices,
+        null=False,
+        default=State.PENDING_ANNOTATION,
+    )
+
     objects = TaskManager()  # task manager by default
     prepared = PreparedTaskManager()  # task manager with filters, ordering, etc for data_manager app
 

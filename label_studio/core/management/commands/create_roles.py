@@ -3,6 +3,7 @@ import logging
 from django.core.management.base import BaseCommand
 from django.contrib.auth.models import Group, Permission
 from core.permissions import all_permissions
+from users.models import UserRole
 
 logger = logging.getLogger(__name__)
 
@@ -11,7 +12,7 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         roles = {
-            'Reviewer': (
+            UserRole.REVIEWER.value: (
                 all_permissions.projects_create,
                 all_permissions.projects_view,
                 all_permissions.projects_change,
@@ -25,7 +26,7 @@ class Command(BaseCommand):
                 all_permissions.annotations_change,
                 all_permissions.annotations_delete,
             ),
-            'Annotator': (
+            UserRole.ANNOTATOR.value: (
                 all_permissions.projects_view,
                 all_permissions.annotations_create,
                 all_permissions.annotations_view,

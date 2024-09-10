@@ -156,6 +156,7 @@ class ProjectSerializer(FlexFieldsModelSerializer):
             'finished_task_number',
             'queue_total',
             'queue_done',
+            'state',
         ]
 
     def validate_label_config(self, value):
@@ -264,3 +265,13 @@ class GetFieldsSerializer(serializers.Serializer):
     def validate_filter(self, value):
         if value in ['all', 'pinned_only', 'exclude_pinned']:
             return value
+
+
+class ProjectStateSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        fields = ['state']
+        model = Project
+
+    def update(self, instance, validated_data):
+        return super().update(instance, validated_data)

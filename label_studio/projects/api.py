@@ -13,6 +13,7 @@ from core.redis import start_job_async_or_sync
 from core.utils.common import paginator, paginator_help, temporary_disconnect_all_signals
 from core.utils.exceptions import LabelStudioDatabaseException, ProjectExistException
 from core.utils.io import find_dir, find_file, read_yaml
+from users.models import UserRole
 from data_manager.functions import filters_ordering_selected_items_exist, get_prepared_queryset
 from django.conf import settings
 from django.db import IntegrityError
@@ -35,6 +36,7 @@ from projects.serializers import (
     ProjectReimportSerializer,
     ProjectSerializer,
     ProjectSummarySerializer,
+    ProjectStateSerializer
 )
 from rest_framework import filters, generics, status
 from rest_framework.exceptions import NotFound
@@ -252,9 +254,22 @@ class ProjectListAPI(generics.ListCreateAPIView):
         serializer.is_valid(raise_exception=True)
         fields = serializer.validated_data.get('include')
         filter = serializer.validated_data.get('filter')
-        projects = Project.objects.filter(organization=self.request.user.active_organization).order_by(
-            F('pinned_at').desc(nulls_last=True), '-created_at'
-        )
+
+        user_groups = tuple(map(lambda group: group.name, self.request.user.groups.all()))
+
+        projects = Project.objects.none()
+        if self.request.user.is_superuser or self.request.user.is_staff:
+            projects = Project.objects.all().order_by(
+                F('pinned_at').desc(nulls_last=True), '-created_at'
+            )
+        elif UserRole.REVIEWER.value in user_groups:
+            projects = Project.objects.filter(organization=self.request.user.active_organization, state=Project.State.REVIEWING).order_by(
+                F('pinned_at').desc(nulls_last=True), '-created_at'
+            )
+        elif UserRole.ANNOTATOR.value in user_groups:
+            projects = Project.objects.filter(organization=self.request.user.active_organization, assigned_annotator=self.request.user).order_by(
+                F('pinned_at').desc(nulls_last=True), '-created_at'
+            )
         if filter in ['pinned_only', 'exclude_pinned']:
             projects = projects.filter(pinned_at__isnull=filter == 'exclude_pinned')
         return ProjectManager.with_counts_annotate(projects, fields=fields).prefetch_related('members', 'created_by')
@@ -859,3 +874,26 @@ class ProjectModelVersions(generics.RetrieveAPIView):
         count = project.delete_predictions(model_version=model_version)
 
         return Response(data=count)
+
+
+class ProjectStateAPI(generics.UpdateAPIView):
+    parser_classes = (JSONParser, FormParser, MultiPartParser)
+    serializer_class = ProjectStateSerializer
+
+    def get_object(self):
+        return Project.objects.get(id=self.kwargs.get('pk', 0))
+
+    def patch(self, request, *args, **kwargs):
+        project: Project = self.get_object()
+        current_state = project.state
+        next_state = request.data.get('state', None)
+        try:
+            print('starting transition state')
+            Project.State.can_transistion_state(request.user, current_state=current_state, next_state=next_state)
+            print('ended transition state')
+        except APIException as e:
+            print('api exception')
+            return Response(data={"message": e.detail}, status=e.status_code, content_type='application/json')
+        except Exception:
+            return Response(data={"message": "something went wrong"}, status=500, content_type='application/json')
+        return super(ProjectStateAPI, self).patch(request, *args, **kwargs)

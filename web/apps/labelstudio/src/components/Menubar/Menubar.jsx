@@ -25,9 +25,12 @@ import { VersionNotifier, VersionProvider } from "../VersionNotifier/VersionNoti
 import "./Menubar.scss";
 import "./MenuContent.scss";
 import "./MenuSidebar.scss";
+import "./Menubar.css";
 import { ModelsPage } from "../../pages/Organization/Models/ModelsPage";
 import { FF_DIA_835, isFF } from "../../utils/feature-flags";
-import { Component, shouldShowComponent } from "../../utils/permission-utils";
+import { Component, shouldShowComponent, isValidNextProjectState, isValidProjectState, ProjectState } from "../../utils/permission-utils";
+import { useAPI } from "../../providers/ApiProvider";
+import { useProject } from "../../providers/ProjectProvider";
 
 export const MenubarContext = createContext();
 
@@ -127,6 +130,34 @@ export const Menubar = ({ enabled, defaultOpened, defaultPinned, children, onSid
     useMenuRef?.current?.close();
   }, [location]);
 
+  const api = useAPI();
+  const project = useProject()?.project;
+  const projectState = isValidProjectState(project.state);
+  const [changedProjectState, setChangedProjectState] = useState(null);
+  const [projectStateChangeBtnDisabled, setProjectStateChangeBtnDisabled] = useState(false);
+
+  useEffect(()=>{
+    if(!changedProjectState){
+      return;
+    }
+    setProjectStateChangeBtnDisabled(true);
+    (async()=>{
+      try{
+        await api.callApi('updateProjectState',{
+          params: {
+            pk: project.id,
+          },
+          body: {
+            state: changedProjectState
+          }
+        });
+        window.location.reload();
+      }catch(e){}
+      setProjectStateChangeBtnDisabled(false);
+    })()
+
+  }, [changedProjectState]);
+
   return (
     <div className={contentClass}>
       {enabled && (
@@ -140,9 +171,40 @@ export const Menubar = ({ enabled, defaultOpened, defaultPinned, children, onSid
 
           <div className={menubarContext}>
             <LeftContextMenu className={contextItem.mod({ left: true })} />
-
-            {shouldShowComponent(Component.PROJECT_SETTINGS_BUTTON) && <RightContextMenu className={contextItem.mod({ right: true })} />}
+            {shouldShowComponent(Component.PROJECT_SCRAPE_BUTTON) && <RightContextMenu className={contextItem.mod({ right: true })} />}
           </div>
+
+          { projectState &&
+            (
+              <>
+                {isValidNextProjectState(projectState, ProjectState.ANNOTATING) && shouldShowComponent(Component.PROJECT_SUBMIT_FOR_ANNOTATION_BUTTON) &&
+                  <button disabled={projectStateChangeBtnDisabled} className="project-state-update-btn" onClick={()=>setChangedProjectState(ProjectState.ANNOTATING)}>
+                    Submit for Annotation
+                  </button>
+                }
+                {isValidNextProjectState(projectState, ProjectState.REVIEWING) && shouldShowComponent(Component.PROJECT_SUBMIT_FOR_ANNOTATION_BUTTON) &&
+                  <button disabled={projectStateChangeBtnDisabled} className="project-state-update-btn" onClick={()=>setChangedProjectState(ProjectState.REVIEWING)}>
+                      Submit for Review
+                    </button>
+                }
+                {isValidNextProjectState(projectState, ProjectState.REVIEWED) && shouldShowComponent(Component.PROJECT_MARK_AS_REVIEWED_BUTTON) &&
+                    <button disabled={projectStateChangeBtnDisabled} className="project-state-update-btn" onClick={()=>setChangedProjectState(ProjectState.REVIEWED)}>
+                      Mark as Reviewed
+                    </button>
+                }
+                {isValidNextProjectState(projectState, ProjectState.COMPLETED) && shouldShowComponent(Component.PROJECT_MARK_AS_COMPLETED_BUTTON) &&
+                    <button disabled={projectStateChangeBtnDisabled} className="project-state-update-btn" onClick={()=>setChangedProjectState(ProjectState.COMPLETED)}>
+                      Mark as Completed
+                    </button>
+                }
+                {isValidNextProjectState(projectState, ProjectState.SCRAPED) && shouldShowComponent(Component.PROJECT_SCRAPE_BUTTON) &&
+                    <button disabled={projectStateChangeBtnDisabled} className="project-state-scrape-btn" onClick={()=>setChangedProjectState(ProjectState.SCRAPED)}>
+                      Scrape
+                    </button>
+                }
+              </>
+            )
+          }
 
           <Dropdown.Trigger
             ref={useMenuRef}

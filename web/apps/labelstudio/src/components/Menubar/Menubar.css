@@ -1,0 +1,14 @@
+
+.project-state-update-btn {
+  margin: 5px;
+  background: #566fcf;
+  color: white;
+  fontWeight: lighter;
+}
+
+.project-state-scrape-btn {
+  margin: 5px;
+  background: #C21807;
+  color: white;
+  fontWeight: lighter;
+}
