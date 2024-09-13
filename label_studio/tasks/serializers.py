@@ -724,3 +724,14 @@ class TaskIDOnlySerializer(ModelSerializer):
 
 # LSE inherits this serializer
 TaskSerializerBulk = load_func(settings.TASK_SERIALIZER_BULK)
+
+
+
+class TaskStateSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        fields = ['state']
+        model = Task
+
+    def update(self, instance, validated_data):
+        return super().update(instance, validated_data)

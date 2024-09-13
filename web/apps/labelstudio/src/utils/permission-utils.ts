@@ -1,6 +1,5 @@
 
 // needs to be kept in sync with the pythons one
-
 enum ProjectState{
   ANNOTATING = 'ANT',
   REVIEWING = 'RVW',
@@ -9,13 +8,30 @@ enum ProjectState{
   SCRAPED = 'SCR',
 }
 
-const ValidNextStates = {
+function getProjectStateExpandedForm(state: ProjectState){
+  switch(state){
+    case ProjectState.ANNOTATING:
+      return "Annotating";
+    case ProjectState.REVIEWING:
+      return "Reviewing";
+    case ProjectState.REVIEWED :
+      return "Reviewed";
+    case ProjectState.COMPLETED:
+      return "Completed";
+    case ProjectState.SCRAPED :
+      return "Scraped";
+    default:
+      return null;
+  }
+}
+
+const ValidNextProjectStates = {
   [ProjectState.ANNOTATING]: new Set([ProjectState.SCRAPED, ProjectState.REVIEWING]),
   [ProjectState.REVIEWING]: new Set([ProjectState.SCRAPED, ProjectState.REVIEWED]),
   [ProjectState.REVIEWED]: new Set([ProjectState.SCRAPED, ProjectState.COMPLETED, ProjectState.ANNOTATING]),
   [ProjectState.COMPLETED]: new Set([]),
   [ProjectState.SCRAPED]: new Set([]),
-}
+} as const
 
 function isValidProjectState(state: string): ProjectState|null {
   switch(state){
@@ -35,9 +51,58 @@ function isValidProjectState(state: string): ProjectState|null {
 }
 
 function isValidNextProjectState(prevState: ProjectState, nextState: ProjectState): boolean {
-  console.log('checking transistion validity from ', prevState, ' to ', nextState);
-  return ValidNextStates[prevState]?.has(nextState as never) ?? false;
+  return ValidNextProjectStates[prevState]?.has(nextState as never) ?? false;
 }
+
+
+enum TaskState {
+  PENDING_ANNOTATION = 'PAN',
+  PENDING_REVIEW = 'PRV',
+  APPROVED = 'APR',
+  REJECTED = 'REJ',
+}
+
+function getTaskStateExpandedForm(state: TaskState){
+  switch(state){
+    case TaskState.PENDING_ANNOTATION:
+      return "Pending Annotation";
+    case TaskState.PENDING_REVIEW:
+      return "Pending Review";
+    case TaskState.APPROVED :
+      return "Approved";
+    case TaskState.REJECTED:
+      return "Rejected";
+    default:
+      return null;
+  }
+}
+
+const ValidNextTaskStates = {
+  [TaskState.PENDING_ANNOTATION]: new Set([TaskState.PENDING_REVIEW]),
+  [TaskState.PENDING_REVIEW]: new Set([TaskState.APPROVED, TaskState.REJECTED]),
+  [TaskState.APPROVED]: new Set(),
+  [TaskState.REJECTED]: new Set(),
+}
+
+function isValidTaskState(state: string): TaskState|null {
+  switch(state){
+    case TaskState.PENDING_ANNOTATION:
+      return TaskState.PENDING_ANNOTATION;
+    case TaskState.PENDING_REVIEW:
+      return TaskState.PENDING_REVIEW;
+    case TaskState.APPROVED :
+      return TaskState.APPROVED;
+    case TaskState.REJECTED:
+      return TaskState.REJECTED;
+    default:
+      return null;
+  }
+}
+
+function isValidNextTaskState(prevState: TaskState, nextState: TaskState): boolean {
+  return ValidNextTaskStates[prevState]?.has(nextState as never) ?? false;
+}
+
 
 
 enum Permission {
@@ -47,6 +112,11 @@ enum Permission {
     PROJECTS_CHANGE_STATE_TO_REVIEWED = 'projects.change_state_to_reviewed',
     PROJECTS_CHANGE_STATE_TO_COMPLETED = 'projects.change_state_to_completed',
     PROJECTS_CHANGE_STATE_TO_SCRAPED = 'projects.change_state_to_scraped',
+
+    TASKS_CHANGE_STATE_TO_PENDING_ANNOTATION = 'tasks.change_state_to_pending_annotation',
+    TASKS_CHANGE_STATE_TO_PENDING_REVIEW = 'tasks.change_state_to_pending_review',
+    TASKS_CHANGE_STATE_TO_APPROVED = 'tasks.change_state_to_approved',
+    TASKS_CHANGE_STATE_TO_REJECTED = 'tasks.change_state_to_rejected',
 
     ORGANIZATIONS_CREATE = 'organizations.add_organization',
     ORGANIZATIONS_VIEW = 'organizations.view_organization',
@@ -108,6 +178,8 @@ enum Component {
   PROJECT_MARK_AS_COMPLETED_BUTTON,
   PROJECT_SCRAPE_BUTTON,
 
+  TASK_APPROVED_BUTTON,
+  TASK_REJECTED_BUTTON,
 }
 
 
@@ -146,6 +218,12 @@ const RequiredComponentPermissions: {readonly [key in Component]: readonly Permi
   [Component.PROJECT_SCRAPE_BUTTON]: [
     Permission.PROJECTS_CHANGE_STATE_TO_SCRAPED,
   ],
+  [Component.TASK_APPROVED_BUTTON]: [
+    Permission.TASKS_CHANGE_STATE_TO_APPROVED,
+  ],
+  [Component.TASK_REJECTED_BUTTON]: [
+    Permission.TASKS_CHANGE_STATE_TO_REJECTED,
+  ],
 } as const;
 
 
@@ -169,7 +247,7 @@ const currentUserPermissions: readonly string[] = (()=>{
 function shouldShowComponent(component: Component): boolean{
   for(const requiredPermission of RequiredComponentPermissions[component]){
     if(currentUserPermissions.indexOf(requiredPermission) === -1){
-      // console.log(`doesn't have ${requiredPermission}`);
+      console.log(`doesn't have ${requiredPermission}`);
       return false;
     }
   }
@@ -179,9 +257,20 @@ function shouldShowComponent(component: Component): boolean{
 // console.log(`shouldShowComponent(ProjectImportButton); = ${shouldShowComponent(Component.PROJECT_IMPORT_BUTTON)}`);
 // console.log(`shouldShowComponent(Settings) = ${shouldShowComponent(Component.PROJECT_SETTINGS_BUTTON)}`);
 export {
+
+  // component
   Component,
   shouldShowComponent,
+
+  // projects
+  ProjectState,
   isValidProjectState,
   isValidNextProjectState,
-  ProjectState,
+  getProjectStateExpandedForm,
+
+  // tasks
+  TaskState,
+  isValidTaskState,
+  isValidNextTaskState,
+  getTaskStateExpandedForm
 };

@@ -21,6 +21,7 @@ import { Block } from "../../../utils/bem";
 import { FieldsButton } from "../FieldsButton";
 import { LsGear, LsGearNewUI } from "../../../assets/icons";
 import { FF_DEV_3873, FF_LOPS_E_10, FF_LOPS_E_3, isFF } from "../../../utils/feature-flags";
+import { Component, getTaskStateExpandedForm, isValidNextTaskState, isValidTaskState, shouldShowComponent, TaskState } from '../../../../../../apps/labelstudio/src/utils/permission-utils';
 
 const Decorator = (decoration) => {
   return {
@@ -33,7 +34,6 @@ const Decorator = (decoration) => {
         } else if (d.resolver instanceof Function) {
           found = d.resolver(col);
         }
-
         return found;
       });
     },
@@ -153,6 +153,136 @@ export const Table = observer(
         );
       },
     });
+
+
+    columns.push({
+      id: "show-state",
+      cellClassName: "show-state",
+      style: {
+        width: 200,
+        maxWidth: 200,
+        justifyContent: "center",
+      },
+      onClick: (e) => e.stopPropagation(),
+      Header() {
+        return <div style={{ width: 40 }} />;
+      },
+      Cell({data}) {
+        let out = JSON.parse(data.source ?? "{}");
+        console.log(`data = ${out}`);
+        return (
+          <div style={{
+              display: "inline-flex",
+              alignItems:"center",
+              borderRadius: "9999px",
+              border:"1px solid",
+              padding:"0.125rem 0.625rem",
+              fontSize:"0.75rem",
+              fontWeight:"600",
+              transition:"color 0.2s",
+          }}>
+          {getTaskStateExpandedForm(out.state)}
+          </div>
+        );
+      },
+    });
+
+
+    columns.push({
+      id: "change-state",
+      cellClassName: "show-state",
+      style: {
+        width: 200,
+        maxWidth: 200,
+        justifyContent: "center",
+      },
+      onClick: (e) => e.stopPropagation(),
+      Header() {
+        return <div style={{ width: 40 }} />;
+      },
+      Cell({data}) {
+        let out = JSON.parse(data.source ?? "{}");
+        const taskState = isValidTaskState(out.state);
+
+        const hasPermissionToApprove = shouldShowComponent(Component.TASK_APPROVED_BUTTON);
+        const hasPermissionToReject = shouldShowComponent(Component.TASK_REJECTED_BUTTON);
+        const showApproveButton = hasPermissionToApprove && isValidNextTaskState(isValidTaskState(out.state), TaskState.APPROVED);
+        const showRejectButton = hasPermissionToReject && isValidNextTaskState(isValidTaskState(out.state), TaskState.REJECTED);
+
+        if(!showApproveButton && !showRejectButton){
+          return <></>
+        }
+
+        // Inline CSS styles for buttons
+        const buttonStyle = {
+          padding: '10px 12px',
+          fontSize:"0.75rem",
+          border: 'none',
+          borderRadius: '5px',
+          cursor: 'pointer',
+          margin: '0 10px',
+          color: '#fff',
+        };
+
+        const approveStyle = {
+          ...buttonStyle,
+          backgroundColor: '#4CAF50', // Green
+        };
+
+        const rejectStyle = {
+          ...buttonStyle,
+          backgroundColor: '#f44336', // Red
+        };
+
+        const containerStyle = {
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+        };
+
+        const [action, setAction] = useState(null);
+
+        useEffect(()=>{
+          if(!action){
+            return;
+          }
+          (async()=>{
+            await api.taskState({ taskID: out.id }, {
+              body: {
+                state: action,
+              },
+            });
+            window.location.reload()
+            setAction(null);
+          })()
+        }, [action])
+
+        return (
+          <div style={containerStyle}>
+          {showApproveButton && <button
+            style={approveStyle}
+            disabled={action!==null}
+            onClick={()=>{
+              setAction(TaskState.APPROVED);
+            }}
+            >
+              Approve
+          </button>}
+          {showRejectButton && <button
+            style={rejectStyle}
+            disabled={action!==null}
+            onClick={()=>{
+              setAction(TaskState.REJECTED);
+            }}
+            >
+              Reject
+            </button>
+          }
+          </div>
+        );
+      },
+    });
+
 
     if (Object.keys(colOrder).length > 0) {
       columns.sort((a, b) => {

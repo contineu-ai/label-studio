@@ -1,12 +1,13 @@
 import chr from "chroma-js";
-import { format } from "date-fns";
+import { format, isValid } from "date-fns";
 import React, { useMemo } from "react";
 import { NavLink } from "react-router-dom";
 import { LsBulb, LsCheck, LsEllipsis, LsMinus } from "../../assets/icons";
 import { Button, Dropdown, Menu, Pagination, Userpic } from "../../components";
 import { Block, Elem } from "../../utils/bem";
 import { absoluteURL } from "../../utils/helpers";
-import { Component, shouldShowComponent } from "../../utils/permission-utils";
+import { Component, getProjectStateExpandedForm, isValidProjectState, shouldShowComponent } from "../../utils/permission-utils";
+import "./Projects.css";
 
 const DEFAULT_CARD_COLORS = ["#FFFFFF", "#FDFDFC"];
 
@@ -68,13 +69,14 @@ const ProjectCard = ({ project }) => {
       : {};
   }, [color]);
 
+  const projectState = getProjectStateExpandedForm(isValidProjectState(project.state));
+
   return (
     <Elem tag={NavLink} name="link" to={`/projects/${project.id}/data`} data-external>
       <Block name="project-card" mod={{ colored: !!color }} style={projectColors}>
         <Elem name="header">
           <Elem name="title">
             <Elem name="title-text">{project.title ?? "New project"}</Elem>
-
             <Elem
               name="menu"
               onClick={(e) => {
@@ -99,6 +101,7 @@ const ProjectCard = ({ project }) => {
               <Elem name="total">
                 {project.finished_task_number} / {project.task_number}
               </Elem>
+              {projectState && <div className="project-state">{projectState}</div>}
               <Elem name="detail">
                 <Elem name="detail-item" mod={{ type: "completed" }}>
                   <Elem tag={LsCheck} name="icon" />
@@ -119,9 +122,9 @@ const ProjectCard = ({ project }) => {
         <Elem name="description">{project.description}</Elem>
         <Elem name="info">
           <Elem name="created-date">{format(new Date(project.created_at), "dd MMM ’yy, HH:mm")}</Elem>
-          <Elem name="created-by">
-            <Userpic src="#" user={project.created_by} showUsername />
-          </Elem>
+            <div>
+              <Userpic src="#" user={project.created_by} showUsername />
+            </div>
         </Elem>
       </Block>
     </Elem>

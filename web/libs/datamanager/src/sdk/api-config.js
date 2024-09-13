@@ -61,6 +61,12 @@ export const APIConfig = {
     /** Single task (sample) */
     task: "/tasks/:taskID",
 
+    /** to update task state **/
+    taskState: {
+      method: "patch",
+      path: "/../tasks/:taskID/state",
+    },
+
     /** Next task (labelstream, default sequential) */
     nextTask: "/tasks/next",
 

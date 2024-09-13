@@ -2,6 +2,7 @@
 """
 import logging
 
+from rest_framework.exceptions import APIException
 import drf_yasg.openapi as openapi
 from core.feature_flags import flag_set
 from core.mixins import GetParentObjectMixin
@@ -40,6 +41,7 @@ from tasks.serializers import (
     PredictionSerializer,
     TaskSerializer,
     TaskSimpleSerializer,
+    TaskStateSerializer,
 )
 from webhooks.models import WebhookAction
 from webhooks.utils import (
@@ -827,3 +829,25 @@ class AnnotationConvertAPI(generics.RetrieveAPIView):
         emit_webhooks_for_instance(organization, project, WebhookAction.ANNOTATIONS_DELETED, [pk])
         data = AnnotationDraftSerializer(instance=draft).data
         return Response(status=201, data=data)
+
+
+
+class TaskStateAPI(generics.UpdateAPIView):
+    parser_classes = (JSONParser, FormParser, MultiPartParser)
+    serializer_class = TaskStateSerializer
+
+    def get_object(self):
+        return Task.objects.get(id=self.kwargs.get('pk', 0))
+
+    def patch(self, request, *args, **kwargs):
+        project: Project = self.get_object()
+        current_state = project.state
+        next_state = request.data.get('state', None)
+        try:
+            Task.State.can_transistion_state(request.user, current_state=current_state, next_state=next_state)
+        except APIException as e:
+            print('api exception')
+            return Response(data={"message": e.detail}, status=e.status_code, content_type='application/json')
+        except Exception:
+            return Response(data={"message": "something went wrong"}, status=500, content_type='application/json')
+        return super(TaskStateAPI, self).patch(request, *args, **kwargs)

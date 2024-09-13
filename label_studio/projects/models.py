@@ -2,8 +2,9 @@
 """
 import json
 import logging
-from typing import Any, Mapping, Optional, Dict, Set
+from typing import Any, Mapping, Optional, Set
 
+from rest_framework.exceptions import APIException
 from annoying.fields import AutoOneToOneField
 from core.permissions import all_permissions
 from core.feature_flags import flag_set
@@ -56,7 +57,6 @@ from tasks.models import (
     bulk_update_stats_project_tasks,
 )
 logger = logging.getLogger(__name__)
-from rest_framework.exceptions import APIException
 
 
 class ProjectManager(models.Manager):

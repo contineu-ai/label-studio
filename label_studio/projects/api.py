@@ -5,6 +5,7 @@ import os
 import pathlib
 
 import drf_yasg.openapi as openapi
+from django.db import transaction
 from core.filters import ListFilter
 from core.label_config import config_essential_data_has_changed
 from core.mixins import GetParentObjectMixin
@@ -263,11 +264,11 @@ class ProjectListAPI(generics.ListCreateAPIView):
                 F('pinned_at').desc(nulls_last=True), '-created_at'
             )
         elif UserRole.REVIEWER.value in user_groups:
-            projects = Project.objects.filter(organization=self.request.user.active_organization, state=Project.State.REVIEWING).order_by(
+            projects = Project.objects.filter(organization=self.request.user.active_organization, state__in=(Project.State.REVIEWING, Project.State.REVIEWED)).order_by(
                 F('pinned_at').desc(nulls_last=True), '-created_at'
             )
         elif UserRole.ANNOTATOR.value in user_groups:
-            projects = Project.objects.filter(organization=self.request.user.active_organization, assigned_annotator=self.request.user).order_by(
+            projects = Project.objects.filter(organization=self.request.user.active_organization, assigned_annotator=self.request.user, state=Project.State.ANNOTATING).order_by(
                 F('pinned_at').desc(nulls_last=True), '-created_at'
             )
         if filter in ['pinned_only', 'exclude_pinned']:
@@ -888,12 +889,24 @@ class ProjectStateAPI(generics.UpdateAPIView):
         current_state = project.state
         next_state = request.data.get('state', None)
         try:
-            print('starting transition state')
-            Project.State.can_transistion_state(request.user, current_state=current_state, next_state=next_state)
-            print('ended transition state')
+            with transaction.atomic():
+
+                Project.State.can_transistion_state(request.user, current_state=current_state, next_state=next_state)
+                result = super(ProjectStateAPI, self).patch(request, *args, **kwargs)
+
+                task_state_acc_to_project_state = {
+                    Project.State.ANNOTATING: Task.State.PENDING_ANNOTATION,
+                    Project.State.REVIEWING: Task.State.PENDING_REVIEW,
+                }
+
+                if next_state in task_state_acc_to_project_state:
+                    # only change task state when one of the above states the project is going in
+                    Task.objects.filter(project=project).exclude(state__in=(Task.State.APPROVED,)).update(state=task_state_acc_to_project_state[next_state])
+
+                return result
         except APIException as e:
             print('api exception')
             return Response(data={"message": e.detail}, status=e.status_code, content_type='application/json')
         except Exception:
             return Response(data={"message": "something went wrong"}, status=500, content_type='application/json')
-        return super(ProjectStateAPI, self).patch(request, *args, **kwargs)
+        return result

@@ -10,6 +10,8 @@ import uuid
 from typing import Any, Mapping, Optional, cast
 from urllib.parse import urljoin
 
+from rest_framework.exceptions import APIException
+from typing import Set
 import ujson as json
 from core.bulk_update_utils import bulk_update
 from core.current_request import get_current_request
@@ -39,6 +41,7 @@ from django.utils.timezone import now
 from django.utils.translation import gettext_lazy as _
 from rest_framework.exceptions import ValidationError
 from tasks.choices import ActionType
+from core.permissions import all_permissions
 
 logger = logging.getLogger(__name__)
 
@@ -167,6 +170,44 @@ class Task(TaskMixin, models.Model):
         PENDING_REVIEW = 'PRV', _('Pending-Review')
         APPROVED = 'APR', _('Approved')
         REJECTED = 'REJ', _('Rejected')
+
+        @classmethod
+        def _valid_next_states(cls, current_state: str) -> Set[str]:
+            next_states = {
+                cls.PENDING_ANNOTATION: {cls.PENDING_REVIEW},
+                cls.PENDING_REVIEW: {cls.APPROVED, cls.REJECTED},
+                cls.APPROVED: {},
+                cls.REJECTED: {},
+            }
+            return next_states[current_state]
+
+        @classmethod
+        def _state_required_permission(cls, state: str) -> str:
+            permissions = {
+                cls.PENDING_ANNOTATION: all_permissions.tasks_change_state_to_pending_annotation,
+                cls.PENDING_REVIEW: all_permissions.tasks_change_state_to_pending_review,
+                cls.APPROVED: all_permissions.tasks_change_state_to_approved,
+                cls.REJECTED: all_permissions.tasks_change_state_to_rejected,
+            }
+            return permissions[state]
+
+        @classmethod
+        def can_transistion_state(cls, user, current_state: str, next_state: str):
+            '''
+            Raises if the transistion is not valid
+            '''
+            try:
+                # validate state transition, so that entering invalid state can be prevented
+                if next_state not in cls._valid_next_states(current_state):
+                    raise APIException(detail='invalid state', code=400)
+
+                # validate whether user is allowed to make the given valid transistion
+                if not user.has_all_permissions(cls._state_required_permission(next_state)):
+                    raise APIException(detail="not allowed", code=403)
+
+            except KeyError:
+                raise APIException(detail='unknown state', code=400)
+
 
     state = models.CharField(
         max_length=3,

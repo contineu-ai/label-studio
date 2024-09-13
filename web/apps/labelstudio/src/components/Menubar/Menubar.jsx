@@ -151,7 +151,7 @@ export const Menubar = ({ enabled, defaultOpened, defaultPinned, children, onSid
             state: changedProjectState
           }
         });
-        window.location.reload();
+        history.back();
       }catch(e){}
       setProjectStateChangeBtnDisabled(false);
     })()
@@ -179,10 +179,10 @@ export const Menubar = ({ enabled, defaultOpened, defaultPinned, children, onSid
               <>
                 {isValidNextProjectState(projectState, ProjectState.ANNOTATING) && shouldShowComponent(Component.PROJECT_SUBMIT_FOR_ANNOTATION_BUTTON) &&
                   <button disabled={projectStateChangeBtnDisabled} className="project-state-update-btn" onClick={()=>setChangedProjectState(ProjectState.ANNOTATING)}>
-                    Submit for Annotation
+                    Submit for Re-annotation
                   </button>
                 }
-                {isValidNextProjectState(projectState, ProjectState.REVIEWING) && shouldShowComponent(Component.PROJECT_SUBMIT_FOR_ANNOTATION_BUTTON) &&
+                {isValidNextProjectState(projectState, ProjectState.REVIEWING) && shouldShowComponent(Component.PROJECT_SUBMIT_FOR_REVIEW_BUTTON) &&
                   <button disabled={projectStateChangeBtnDisabled} className="project-state-update-btn" onClick={()=>setChangedProjectState(ProjectState.REVIEWING)}>
                       Submit for Review
                     </button>

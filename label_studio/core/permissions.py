@@ -4,8 +4,6 @@ import logging   # noqa: I001
 from typing import Optional
 
 from pydantic import BaseModel
-from django.contrib.auth.models import Permission
-from django.contrib.contenttypes.models import ContentType
 
 # import rules
 
@@ -24,6 +22,19 @@ class AllPermissions(BaseModel):
     projects_change_state_to_reviewed: str = 'projects.change_state_to_reviewed'
     projects_change_state_to_completed: str = 'projects.change_state_to_completed'
     projects_change_state_to_scraped: str = 'projects.change_state_to_scraped'
+
+    tasks_change_state_to_pending_annotation: str = 'tasks.change_state_to_pending_annotation'
+    tasks_change_state_to_pending_review: str = 'tasks.change_state_to_pending_review'
+    tasks_change_state_to_approved: str = 'tasks.change_state_to_approved'
+    tasks_change_state_to_rejected: str = 'tasks.change_state_to_rejected'
+
+
+    # TODO:Decide whether to use these permissions to view a subset of projects or not
+    # projects_view_state_to_annotating: str = 'projects.view_state_to_annotating'
+    # projects_view_state_to_reviewing: str = 'projects.view_state_to_reviewing'
+    # projects_view_state_to_reviewed: str = 'projects.view_state_to_reviewed'
+    # projects_view_state_to_completed: str = 'projects.view_state_to_completed'
+    # projects_view_state_to_scraped: str = 'projects.view_state_to_scraped'
 
     # updated permisisons according to the ones in the permissions database
     organizations_create: str = 'organizations.add_organization'

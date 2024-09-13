@@ -745,9 +745,9 @@ class PreparedTaskManager(models.Manager):
             request=prepare_params.request,
         )
 
-    def only_filtered(self, prepare_params=None):
+    def only_filtered(self, prepare_params=None, excluded_state=tuple()):
         request = prepare_params.request
-        queryset = TaskQuerySet(self.model).filter(project=prepare_params.project)
+        queryset = TaskQuerySet(self.model).filter(project=prepare_params.project).exclude(state__in=excluded_state)
         fields_for_filter_ordering = get_fields_for_filter_ordering(prepare_params)
         queryset = self.annotate_queryset(queryset, fields_for_evaluation=fields_for_filter_ordering, request=request)
         return queryset.prepared(prepare_params=prepare_params)

@@ -1,0 +1,23 @@
+.project-state {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 9999px; /* Full rounding for 'rounded-full' */
+  border: 1px solid; /* Assumes border width and color; customize if needed */
+  padding: 0.125rem 0.625rem; /* px-2.5 and py-0.5 */
+  font-size: 0.75rem; /* text-xs */
+  font-weight: 600; /* font-semibold */
+  transition: color 0.2s; /* Assumes transition duration for 'transition-colors' */
+}
+
+.project-state:focus {
+  outline: none; /* Removes the default focus outline */
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.2); /* Adjust for 'focus:ring-2' */
+  /* Custom color and offset for focus ring */
+  /* You may need to adjust this based on your design system or use a specific color */
+}
+
+.project-state:focus:ring-offset-2 {
+  /* Additional styling to handle the focus ring offset */
+  /* You can define this separately or combine with other rules */
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.2); /* Adjust for ring and offset */
+}

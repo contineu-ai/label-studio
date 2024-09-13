@@ -265,8 +265,8 @@ class TaskListAPI(generics.ListCreateAPIView):
             'annotations': all_fields,
         }
 
-    def get_task_queryset(self, request, prepare_params):
-        return Task.prepared.only_filtered(prepare_params=prepare_params)
+    def get_task_queryset(self, request, prepare_params, excluded_state=tuple()):
+        return Task.prepared.only_filtered(prepare_params=prepare_params, excluded_state=excluded_state)
 
     @staticmethod
     def prefetch(queryset):
